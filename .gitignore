@@ -1,11 +1,18 @@
 # Ignore raw data
 data/raw/
+data/processed/
+*.csv
+*.xml
+*.json
+*.parquet
+*.hdf5
 
 # Ignore temporary or cache files
 *.tmp
 *.log
 cache/
 __pycache__/
+*.pyc
 
 # Ignore large files by type
 *.osm
@@ -13,12 +20,76 @@ __pycache__/
 *.zip
 
 
- # Python virtual environments
+# Python virtual environments
 .conda/envs/
+anaconda3/envs/
+.venv
+streamenv/
 
-# Project cache
+.coverage
+coverage_html_report/
+
+# requirements.txt
+# requirements.txt
+# not sure about requirements.txt or whether it will be used in this project
+
+# ===============================
+# Python
+# ===============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.ipynb_checkpoints/
+
+# ===============================
+# Environments
+# ===============================
+.env
+.venv
+env/
+venv/
+condaenv/
+*.conda
+
+# ===============================
+# OS / IDE
+# ===============================
+.DS_Store
+Thumbs.db
+.spyderproject
+.spyproject
+.vscode/
+
+# ===============================
+# Logs & caches
+# ===============================
+logs/
 cache/
+*.log
 
-# environment.yaml
-environment.yaml
+# ===============================
+# Data (re-downloadable)
+# ===============================
+data/raw/
 
+# ===============================
+# Reference data (generated)
+# ===============================
+data/reference/state_fips.csv
+
+# ===============================
+# Selenium / browser downloads
+# ===============================
+downloads/
+
+# Ignore all data
+/data/
+
+# But keep reference definitions you create manually
+!data/reference/
+!data/reference/*.csv
+
+# If state_fips.csv is generated, you may or may not want it tracked:
+# If NOT tracked:
+data/reference/state_fips.csv
