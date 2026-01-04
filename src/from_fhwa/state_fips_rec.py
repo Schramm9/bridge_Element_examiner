@@ -49,7 +49,7 @@ class StateDataset:
             f"(got '{value}')"
         )
 
-            
+
 class StateRegistry:
     def __init__(self):
         self._datasets = []

@@ -1,0 +1,12 @@
+name: streamenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - mamba
+  - streamlit
+  - numpy
+  - pandas
+  - spyder
+prefix: C:\ProgramData\anaconda3\envs\streamenv

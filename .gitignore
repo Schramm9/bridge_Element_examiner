@@ -32,11 +32,19 @@ coverage_html_report/
 # requirements.txt
 # requirements.txt
 # not sure about requirements.txt or whether it will be used in this project
+# ===============================
+# Browser drivers
+# ===============================
+bin/chromedriver*
+
+# ===============================
+# Just to be safe
+# ===============================
+*.exe
 
 # ===============================
 # Python
 # ===============================
-__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
@@ -65,13 +73,10 @@ Thumbs.db
 # Logs & caches
 # ===============================
 logs/
-cache/
-*.log
 
 # ===============================
 # Data (re-downloadable)
 # ===============================
-data/raw/
 
 # ===============================
 # Reference data (generated)
@@ -93,3 +98,18 @@ downloads/
 # If state_fips.csv is generated, you may or may not want it tracked:
 # If NOT tracked:
 data/reference/state_fips.csv
+
+# Jupyter scratch notebooks
+Untitled*.ipynb
+
+# Debug artifacts
+debug_*.html
+
+# Environment dumps
+*_backup*.yml
+*_backup*.txt
+conda_list_*.txt
+pip_list_*.txt
+
+# Browser driver licenses
+bin/*.chromedriver
