@@ -1,4 +1,5 @@
 # Ignore raw data
+data/cache/
 data/raw/
 data/processed/
 *.csv
@@ -113,3 +114,8 @@ pip_list_*.txt
 
 # Browser driver licenses
 bin/*.chromedriver
+
+# Scraped raw HTML
+*.html
+*.xml
+*.json

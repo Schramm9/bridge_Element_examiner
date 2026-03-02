@@ -1,138 +1,150 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-import time
-import requests
+from __future__ import annotations
+
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol, runtime_checkable
+from urllib.parse import urlparse
+import logging
 
-BASE_ELEMENT_URL = "https://www.fhwa.dot.gov/bridge/nbi/element.cfm"
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw" / "element"
+import requests
 
-def _init_driver():
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
+logger = logging.getLogger(__name__)
 
-    service = Service('./bin/chromedriver.exe')
-    return webdriver.Chrome(service=service, options=options)
 
-def get_available_states():
-    """Uses Selenium to extract the list of available state names from the latest year."""
-    driver = _init_driver()
-    driver.get(BASE_ELEMENT_URL)
+# ---- Types ---------------------------------------------------------------
+
+@runtime_checkable
+class DatasetLike(Protocol):
+    state_abbr: str
+    year: int
+    dataset_type: str
+    url: str
+
+
+# ---- Helpers -------------------------------------------------------------
+
+def _safe_filename_from_url(url: str) -> str:
+    """
+    Extract a filename from the URL path. Falls back to 'download.bin' if empty.
+    """
+    path = urlparse(url).path
+    name = Path(path).name
+    return name if name else "download.bin"
+
+
+def _normalize_dataset_type(dataset_type: str) -> str:
+    """
+    Normalize dataset_type labels so the rest of the code stays consistent.
+
+    Accepts:
+      - "element", "bridge_element_data" -> "bridge_element_data"
+      - "ascii" -> "ascii"
+    """
+    dt = (dataset_type or "").strip().lower()
+
+    if dt in {"bridge_element_data", "element", "elements"}:
+        return "bridge_element_data"
+    if dt in {"ascii"}:
+        return "ascii"
+
+    raise ValueError(f"Unknown dataset_type: {dataset_type!r}")
+
+
+# ---- Public API ----------------------------------------------------------
+
+def download_dataset(
+    dataset: DatasetLike,
+    *,
+    data_root: Path,
+    overwrite: bool = False,
+    timeout: int = 30,
+    chunk_size: int = 1024 * 64,
+) -> Path:
+    """
+    Download the dataset described by `dataset` into a deterministic location.
+
+    Parameters
+    ----------
+    dataset:
+        Object with attributes (state_abbr, year, dataset_type, url).
+        Typically your StateDataset from src/from_fhwa/state_fips_rec.py.
+    data_root:
+        Root directory where downloads are placed (in tests: tmp_path).
+    overwrite:
+        If False, raises FileExistsError when target file already exists.
+    timeout:
+        Requests timeout in seconds.
+    chunk_size:
+        Chunk size for streaming downloads.
+
+    Returns
+    -------
+    Path
+        Path to the downloaded file on disk.
+    """
+    # Basic structural validation (duck-typing)
+    for attr in ("state_abbr", "year", "dataset_type", "url"):
+        if not hasattr(dataset, attr):
+            raise TypeError(f"dataset must have attribute {attr!r}")
+
+    state_abbr = str(dataset.state_abbr).strip().upper()
+    year = int(dataset.year)
+    dataset_type = _normalize_dataset_type(str(dataset.dataset_type))
+    url = str(dataset.url).strip()
+
+    if len(state_abbr) != 2:
+        raise ValueError(f"state_abbr must be 2 letters, got {state_abbr!r}")
+
+    if not isinstance(data_root, Path):
+        raise TypeError("data_root must be a pathlib.Path")
+
+    if year < 1990:
+        # adjust later if you want; this is just a sanity floor
+        raise ValueError(f"year looks invalid: {year}")
+
+    if not url.startswith("http"):
+        raise ValueError(f"url must be http(s), got {url!r}")
+
+    # Deterministic destination path:
+    # data_root / <dataset_type> / <year> / <state_abbr> / <filename>
+    filename = _safe_filename_from_url(url)
+    dest_dir = data_root / dataset_type / str(year) / state_abbr
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    destination = dest_dir / filename
+    tmp_path = destination.with_suffix(destination.suffix + ".tmp")
+
+    if destination.exists() and not overwrite:
+        raise FileExistsError(f"File already exists: {destination}")
+
+    logger.info("Downloading %s %s %s from %s", dataset_type, year, state_abbr, url)
 
     try:
-        # Wait for the unordered list of year links to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.XPATH, "//ul//a[contains(@href, '.cfm') and contains(@href, '20')]"))
-        )
-    except Exception as e:
-        driver.quit()
-        raise RuntimeError(f"❌ Failed to locate year links: {e}")
+        with requests.get(url, stream=True, timeout=timeout) as resp:
+            resp.raise_for_status()
+            with open(tmp_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=chunk_size):
+                    if chunk:  # filter keep-alive chunks
+                        f.write(chunk)
+    except requests.RequestException as exc:
+        # cleanup temp file if partially written
+        try:
+            if tmp_path.exists():
+                tmp_path.unlink()
+        except OSError:
+            pass
+        raise RuntimeError(f"Failed to download dataset from {url}") from exc
 
-    # Extract all <a> tags that link to yearly pages
-    year_links = driver.find_elements(By.XPATH, "//ul//a[contains(@href, '.cfm') and contains(@href, '20')]")
-    print("Found year links:")
-    for link in year_links:
-        print(" •", link.get_attribute("href"))
+    if not tmp_path.exists() or tmp_path.stat().st_size == 0:
+        try:
+            if tmp_path.exists():
+                tmp_path.unlink()
+        except OSError:
+            pass
+        raise RuntimeError("Downloaded file is empty")
 
-    if not year_links:
-        driver.quit()
-        raise ValueError("❌ Could not find any year links.")
+    # Atomic replace into final destination
+    tmp_path.replace(destination)
 
-    # Click the first (most recent) year link
-    state_map = {}
-
-    for link in year_links:
-        year_url = link.get_attribute("href")
-        driver.get(year_url)
-        time.sleep(2)
-
-    state_links = driver.find_elements(By.XPATH, "//ul//a[contains(@href, '.xml')]")
-    if state_links:
-        print(f"\n✅ Found state links on: {year_url}")
-        for state_link in state_links:
-            state_name = state_link.text.strip()
-            state_url = state_link.get_attribute("href")
-            if state_name and state_url:
-                state_map[state_name] = state_url
-        break  # Stop after first year with data
-    else:
-        print(f"⚠️ No state links found on: {year_url}, trying next year...")
-
-    time.sleep(2)
-
-    # Scrape all state links (usually .xml files)
-    state_links = driver.find_elements(By.XPATH, "//ul//a[contains(@href, '.xml')]")
-    print("\nFound state links:")
-    state_map = {}
-
-    for link in state_links:
-        state_name = link.text.strip()
-        state_url = link.get_attribute("href")
-        print(f" • {state_name} -> {state_url}")
-        if state_name and state_url:
-            state_map[state_name] = state_url
-
-    driver.quit()
-
-    if not state_map:
-        raise ValueError("❌ Could not find any state download links.")
-
-    return list(state_map.keys())
-
-def download_state_data(state_name):
-    """Download all available element data for a selected state across years."""
-    driver = _init_driver()
-    driver.get(BASE_ELEMENT_URL)
-    time.sleep(2)
-
-    # Get all year links from the main page
-    year_links = driver.find_elements(By.XPATH, "//a[contains(@href, 'element.cfm') and contains(text(), '20')]")
-    if not year_links:
-        driver.quit()
-        raise ValueError("❌ No year links found.")
-
-    years_and_urls = [(link.text.strip(), link.get_attribute("href")) for link in year_links]
-
-    downloaded = []
-
-    for year, url in years_and_urls:
-        driver.get(url)
-        time.sleep(2)
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-
-        links = soup.select("a[href$='.zip']")
-        state_links = {
-            a.get_text(strip=True): urljoin(url, a["href"])
-            for a in links if len(a.get_text(strip=True)) > 2
-        }
-
-        if state_name in state_links:
-            download_url = state_links[state_name]
-            filename = f"{state_name.replace(' ', '_')}_{year}.zip"
-            filepath = RAW_DATA_DIR / filename
-            RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-            response = requests.get(download_url)
-            with open(filepath, 'wb') as f:
-                f.write(response.content)
-            print(f"✅ Downloaded {filename}")
-            downloaded.append(filename)
-        else:
-            print(f"⚠️ {state_name} not found for year {year}")
-
-    driver.quit()
-
-    if not downloaded:
-        raise ValueError(f"❌ No data found for {state_name} in any year.")
-
-    return downloaded
+    logger.info("Saved to %s", destination)
+    return destination

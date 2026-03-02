@@ -5,36 +5,37 @@ Created on Tue Dec 23 20:42:10 2025
 @author: Chris
 """
 from pathlib import Path
-import requests
 
-def download_dataset(dataset, target_dir: Path) -> Path:
+def download_dataset(
+    *,
+    state: str,
+    year: int,
+    output_dir: Path,
+    overwrite: bool = False,
+) -> Path:
     """
-    Download a dataset to the target directory.
+    Download FHWA bridge dataset for a given state and year.
 
     Parameters
     ----------
-    dataset : StateDataset
-        Dataset metadata containing a download URL.
-    target_dir : Path
-        Directory where the file will be saved.
+    state : str
+        Two-letter state code (e.g. 'CA')
+    year : int
+        Dataset year (e.g. 2023)
+    output_dir : Path
+        Directory where file will be saved
+    overwrite : bool
+        Whether to overwrite existing files
 
     Returns
     -------
     Path
-        Path to the downloaded file.
+        Path to downloaded file
+
+    Raises
+    ------
+    ValueError
+        Invalid state or year
+    RuntimeError
+        Download failed or dataset missing
     """
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    # Preserve original filename from URL
-    filename = dataset.url.split("/")[-1]
-    target_path = target_dir / filename
-
-    response = requests.get(dataset.url, stream=True)
-    response.raise_for_status()
-
-    with open(target_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-
-    return target_path

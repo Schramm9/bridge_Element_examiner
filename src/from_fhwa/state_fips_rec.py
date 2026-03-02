@@ -11,6 +11,14 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List
 
+from .constants import STATE_ABBR_TO_FIPS
+
+
+
+
+# StateRegistry means the
+
+
 BASE_DOWNLOAD_URL = "https://www.fhwa.dot.gov/bridge/nbi/"
 
 @dataclass()
@@ -76,6 +84,10 @@ def build_registry(zip_links: list[str]) -> StateRegistry:
 
         filename = parts[-1]
         state = filename[4:6]  # "2024CA_ElementData.zip"
+
+        state = state.upper()
+        if state not in STATE_ABBR_TO_FIPS:
+            raise ValueError(f"Invalid state code: {state}")
 
         registry.add(
             state=state,
