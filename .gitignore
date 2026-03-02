@@ -14,6 +14,7 @@ data/processed/
 cache/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Ignore large files by type
 *.osm
