@@ -2,7 +2,7 @@ import requests
 from unittest.mock import Mock, MagicMock
 
 from data.download_data import download_dataset
-from from_fhwa.state_fips_rec import StateDataset
+from bridge_element_examiner.from_fhwa.state_fips_rec import StateDataset
 
 
 def test_download_dataset_creates_file(tmp_path, monkeypatch):

@@ -6,7 +6,7 @@ Created on Sun Dec 28 18:46:05 2025
 """
 import pytest
 
-from from_fhwa.state_fips_rec import StateDataset, StateRegistry
+from bridge_element_examiner.from_fhwa.state_fips_rec import StateDataset, StateRegistry
 
 
 def test_state_dataset_creation():

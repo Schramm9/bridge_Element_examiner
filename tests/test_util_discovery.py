@@ -6,7 +6,7 @@ Created on Wed Dec 31 19:30:34 2025
 """
 
 import pytest
-from from_fhwa.discovery.utils import infer_dataset_type
+from bridge_element_examiner.from_fhwa.discovery.utils import infer_dataset_type
 
 
 def test_infer_dataset_type_element():
