@@ -92,5 +92,3 @@ Data analytics and geospatial modeling project focused on infrastructure risk pr
 License
 
 MIT License
-
-Final Note
