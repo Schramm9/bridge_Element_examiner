@@ -1,208 +1,96 @@
-# bridge_Element_examiner
-
-An examination of the data provided by the FHWA NBI for an individual state.
-
-State: California
-Year: 2024 or latest available
-Dataset: Element
-Target: PoorConditionFlag prediction
-Coast Distance: Optional (if stable by day 7)
-Project scope (CA, 2024, Element)
-Confirmed paths where raw zip/xml live
-Confirmed that CS1 + CS2 + CS3 + CS4 == TOTALQTY for all rows
-
 Bridge Element Examiner
 
-Predicting deterioration risk in California bridge elements using FHWA National Bridge Inventory data, machine learning, and geospatial analysis.
+Element condition states:
 
-Overview
+Condition State Meaning
+CS1 Good condition
+CS2 Fair condition
+CS3 Poor condition
+CS4 Severe condition
 
-Bridge infrastructure deterioration is influenced by structural condition, traffic loading, age, and environmental exposure.
-
-This project builds a data pipeline and machine learning model that analyzes bridge element condition data and predicts the probability that a bridge element's condition will worsen in the following inspection cycle.
-
-The results are presented through an interactive Streamlit dashboard that allows users to explore deterioration patterns across California bridges.
-
-Key capabilities include:
-
-automated FHWA data ingestion
-
-multi-year bridge element dataset construction
-
-feature engineering
-
-machine learning deterioration prediction
-
-geospatial risk visualization
-
-interactive dashboard exploration
-
-Data Sources
-
-This project uses publicly available datasets from the Federal Highway Administration (FHWA).
-
-Primary sources:
-
-Bridge Element Data
-https://www.fhwa.dot.gov/bridge/nbi/element.cfm
-
-NBI Inventory Data
-https://www.fhwa.dot.gov/bridge/nbi/ascii.cfm
-
-The dataset includes:
-
-bridge element inspection data
-
-condition states (CS1–CS4)
-
-bridge characteristics
-
-traffic counts
-
-bridge age
-
-geographic location
-
-This project focuses on California bridges from 2016–2025.
-
-Dataset scale:
-
-~713,000 bridge element observations
-
-~11,200 unique bridges
-
-89 element types
+These condition states allow deterioration trends to be modeled over time.
 
 Feature Engineering
 
-Several engineered features were created to support deterioration modeling.
+Key predictors used in the deterioration model include:
 
-Examples:
+Bridge Age
 
-Condition Metrics
+Average Daily Traffic (ADT)
 
-PCT_CS1 – PCT_CS4
+Element Condition States (CS1–CS4)
 
-PCT_POOR
+Distance to Saltwater Coastline
 
-DELTA_PCT_POOR
+Bridge Element Type
 
-These summarize condition distribution across inspection cycles.
-
-Structural Features
-
-bridge age
-
-traffic volume (ADT)
-
-element type
-
-inspection year
-
-Environmental Exposure
-
-A geospatial feature was engineered:
-
-Distance to Pacific coastline
-
-DIST_TO_COAST_KM
-
-This approximates exposure to coastal corrosion environments.
-
-Bridge coordinates were converted from FHWA coordinate format to decimal degrees.
+Environmental exposure (coastal saltwater) is incorporated using geospatial distance calculations.
 
 Machine Learning Model
 
-A baseline deterioration model was trained to predict whether an element will worsen in the next inspection period.
+The baseline predictive model uses:
+
+Random Forest Classification
 
 Target variable:
 
-WORSENED
+PoorConditionFlag
 
-Model:
+The model predicts the probability that a bridge element will deteriorate to a worse condition state by the next inspection cycle.
 
-Random Forest Classifier
+The model prioritizes high recall to ensure at-risk bridge elements are detected.
 
-Dataset split:
+Running the Project Locally
+1 Clone the repository
+git clone https://github.com/<username>/bridge_Element_examiner.git
+cd bridge_Element_examiner
+2 Create the Conda environment
+conda env create -f environment.yml
+conda activate streamenv
+3 Run the Streamlit dashboard
+streamlit run app/dashboard.py
+4 Open the dashboard
 
-Train: ~534k rows
+Streamlit will launch the application locally:
 
-Test: ~178k rows
+http://localhost:8501
+Technology Stack
 
-Results:
+This project uses:
 
-Metric Value
-ROC AUC ~0.96
-Recall ~0.93
-Precision ~0.22
-F1 Score ~0.35
+Python
+Pandas
+NumPy
+Scikit-learn
+Matplotlib
+PyDeck
+Streamlit
+BeautifulSoup
+Selenium
+Conda
 
-The model prioritizes high recall, meaning it successfully identifies most deterioration events.
+Future Improvements
 
-Important predictors include:
+Potential extensions to the project include:
 
-condition state proportions
+survival analysis for infrastructure deterioration
 
-bridge age
+Markov chain modeling of condition state transitions
 
-traffic volume
+integration of climate and corrosion exposure data
 
-geographic location
+nationwide bridge analysis across all states
 
-environmental exposure
+predictive maintenance prioritization tools
 
-Dashboard
+Author
 
-The project includes an interactive Streamlit dashboard.
+Chris Schramm
 
-Features include:
+Data analytics and geospatial modeling project focused on infrastructure risk prediction.
 
-Executive summary metrics
+License
 
-deterioration rates
+MIT License
 
-bridge counts
-
-dataset statistics
-
-Exploratory analysis
-
-deterioration trends over time
-
-deterioration vs traffic
-
-deterioration vs bridge age
-
-Element-level analysis
-
-highest risk element types
-
-condition distributions
-
-Geospatial risk map
-
-Interactive California map displaying predicted deterioration risk by bridge.
-
-Risk ranking table
-
-Shows bridges with the highest predicted deterioration risk.
-
-Feature importance visualization
-
-Displays the most influential predictors in the ML model.
-
-Example Dashboard Controls
-
-Users can filter analysis by:
-
-year range
-
-element type
-
-traffic volume
-
-bridge age
-
-deterioration events
-
-The map and analytics update dynamically.
+Final Note
