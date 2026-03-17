@@ -13,7 +13,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest",
-  "pre-commit",
+  "pytest-cov",
+  "pre-commit"
 ]
 
 [tool.setuptools]
