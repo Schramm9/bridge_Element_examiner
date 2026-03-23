@@ -124,48 +124,51 @@ geospatial analytics
 
 stakeholder-facing dashboards
 
-Project Structure
 bridge_Element_examiner/
 
-app/
-dashboard.py
-Streamlit dashboard application
-
-data/
-raw/
-FHWA downloads
-
-    interim/
-        parsed XML data
-
-    processed/
-        modeling datasets
-
-notebooks/
-exploratory analysis
-
-scripts/
-train_baseline_deterioration_model.py
-pipeline utilities
-
-src/
-reusable project modules
-
-    from_fhwa/
-        discovery and data download modules
-
-    parsing/
-        XML parsing utilities
-
-    features/
-        feature engineering code
-
-    modeling/
-        machine learning pipeline
-
-environment.yml
-pyproject.toml
-README.md
+│
+├── app/
+│ └── dashboard.py
+│ Streamlit dashboard for interactive analysis
+│
+├── data/
+│ ├── raw/
+│ │ Raw FHWA downloads
+│ │
+│ ├── interim/
+│ │ Parsed XML datasets
+│ │
+│ └── processed/
+│ Modeling datasets
+│
+├── notebooks/
+│ Exploratory analysis and development scratchpads
+│
+├── scripts/
+│ Training and pipeline execution scripts
+│
+├── src/
+│ Reusable project modules
+│
+│ ├── from_fhwa/
+│ │ Data discovery and download modules
+│ │
+│ ├── parsing/
+│ │ XML parsing utilities
+│ │
+│ ├── features/
+│ │ Feature engineering modules
+│ │
+│ └── modeling/
+│ Machine learning training code
+│
+├── environment.yml
+│ Conda environment definition
+│
+├── pyproject.toml
+│ Project configuration
+│
+└── README.md
 
 The project follows a modular data science architecture, separating:
 
